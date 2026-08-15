@@ -8,8 +8,6 @@ const ProfileModal = ({ isOpen, onClose }) => {
   const [bannerPhoto, setBannerPhoto] = useState(null);
 const [skills, setSkills] = useState("");
 const [skillsError, setSkillsError] = useState("")
-  // console.log("ProfileModal User:", user.providerData);
-
   if (!isOpen) return null;
 const handleSkillsChange = (e) => {
   const value = e.target.value;
@@ -22,55 +20,6 @@ const handleSkillsChange = (e) => {
   }
 };
 
-
-// const handleSave = async (e) => {
-  //   e.preventDefault();
-  //   const form = e.target;
-  //   const data = {
-  //     position: form.position.value,
-  //     location: form.location.value,
-  //     phone: form.phone.value,
-  //     about: form.about.value,
-  //     skills: form.skills.value,
-
-  //     education: {
-  //       university: form.university.value,
-  //       degree: form.degree.value,
-  //     },
-  //     experience: {
-  //       position: form.experiencePosition.value,
-  //       companyName: form.companyName.value,
-  //       year: form.experienceYear.value,
-  //     },
-  //     photo: photo,
-  //     bannerPhoto: bannerPhoto,
-  //   };
-  //   console.log("Data:", data);
-  //   try {
-  //     const res = await fetch("http://localhost:3000/users", {
-  //       method: "POST",
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //       },
-  //       body: JSON.stringify({
-  //         ...data,
-
-  //         // File JSON এ পাঠানো যাবে না
-  //         // তাই আপাতত null পাঠাচ্ছি
-  //         photo: null,
-  //         bannerPhoto: null,
-  //       }),
-  //     });
-  //     const result = await res.json();
-  //     console.log("Success:", result);
-  //     if (res.ok) {
-  //       alert("Profile saved successfully!");
-  //       onClose();
-  //     }
-  //   } catch (error) {
-  //     console.error("Error:", error);
-  //   }
-  // };
 const handleSave = async (e) => {
   e.preventDefault();
 
@@ -106,27 +55,27 @@ const handleSave = async (e) => {
   );
   data.append(
     "location",
-    form.location.value
+    form.location.value || ""
   );
   data.append(
     "phone",
-    form.phone.value
+    form.phone.value || ""
   );
   data.append(
     "about",
     form.about.value
   );
-  const skills = form.skills.value
+  const skill = form.skills.value
     .split(",")
     .map((skill) => skill.trim())
     .filter((skill) => skill !== "");
   data.append(
     "skills",
-    JSON.stringify(skills)
+    JSON.stringify(skill)
   );
   data.append(
     "university",
-    form.university.value
+    form.university.value || ""
   );
   data.append(
     "degree",
@@ -134,16 +83,28 @@ const handleSave = async (e) => {
   );
   data.append(
     "experiencePosition",
-    form.experiencePosition.value
+    form.experiencePosition.value || ""
+  );
+  data.append(
+    "linkedin",
+    form.linkedin.value || ""
+  );
+  data.append(
+    "portfolio",
+    form.portfolio.value || ""
+  );
+  data.append(
+    "socialMedia",
+    form.socialMedia.value || ""
   );
   data.append(
     "companyName",
-    form.companyName.value
+    form.companyName.value || ""
   );
   data.append(
     "experienceYear",
-    form.experienceYear.value
-  );
+    form.experienceYear.value || ""
+  )
   if (photo) {
     data.append("photo", photo);
   }
@@ -199,7 +160,7 @@ const handleSave = async (e) => {
 
           <div className="space-y-6 p-6">
             <div>
-              <label className="mb-2 block font-semibold text-gray-700">
+              <label className="mb-2 block bg-gray-100 px-4 py-1 rounded-xl font-semibold text-gray-700">
                 Name
               </label>
 
@@ -212,7 +173,7 @@ const handleSave = async (e) => {
               />
             </div>
             <div>
-              <label className="mb-2 block font-semibold text-gray-700">
+              <label className="mb-2 bg-gray-100 px-4 py-1 rounded-xl block font-semibold text-gray-700">
                 Email
               </label>
 
@@ -226,7 +187,7 @@ const handleSave = async (e) => {
             </div>
             {/* Position */}
             <div>
-              <label className="mb-2 block font-semibold text-gray-700">
+              <label className="mb-2 block bg-gray-100 px-4 py-1 rounded-xl font-semibold text-gray-700">
                 Position
               </label>
 
@@ -241,7 +202,7 @@ const handleSave = async (e) => {
 
             {/* Location */}
             <div>
-              <label className="mb-2 block font-semibold text-gray-700">
+              <label className="mb-2 block bg-gray-100 px-4 py-1 rounded-xl font-semibold text-gray-700">
                 Location
               </label>
 
@@ -255,7 +216,7 @@ const handleSave = async (e) => {
 
             {/* Phone */}
             <div>
-              <label className="mb-2 block font-semibold text-gray-700">
+              <label className="mb-2 block bg-gray-100 px-4 py-1 rounded-xl font-semibold text-gray-700">
                 Phone (WhatsApp)
               </label>
 
@@ -269,7 +230,7 @@ const handleSave = async (e) => {
 
             {/* About */}
             <div>
-              <label className="mb-2 block font-semibold text-gray-700">
+              <label className="mb-2 bg-gray-100 px-4 py-1 rounded-xl block font-semibold text-gray-700">
                 About
               </label>
 
@@ -283,7 +244,7 @@ const handleSave = async (e) => {
 
             {/* Skills */}
             <div>
-  <label className="mb-2 block font-semibold text-gray-700">
+  <label className="mb-2 block bg-gray-100 px-4 py-1 rounded-xl font-semibold text-gray-700">
     Skills
   </label>
 
@@ -312,7 +273,7 @@ const handleSave = async (e) => {
             {/* Education */}
             <div>
 
-              <h3 className="mb-4 text-lg font-bold text-gray-800">
+              <h3 className="mb-4 bg-gray-100 px-4 py-1 rounded-xl text-lg font-bold text-gray-800">
                 Education
               </h3>
 
@@ -354,7 +315,7 @@ const handleSave = async (e) => {
             {/* Experience */}
             <div>
 
-              <h3 className="mb-4 text-lg font-bold text-gray-800">
+              <h3 className="mb-4 bg-gray-100 px-4 py-1 rounded-xl text-lg font-bold text-gray-800">
                 Role
               </h3>
 
@@ -404,10 +365,62 @@ const handleSave = async (e) => {
 
               </div>
             </div>
+          {/* social media links */}
+          <div>
+            <h3 className="mb-4 text-lg bg-gray-100 px-4 py-1 rounded-xl font-bold text-gray-800">
+              Social Media
+            </h3>
+
+            <div className="grid gap-4 md:grid-cols-3">
+
+              {/* LinkedIn */}
+              <div>
+                <label className="mb-2 block font-semibold text-gray-700">
+                  LinkedIn
+                </label>
+
+                <input
+                  type="text"
+                  name="linkedin"
+                  placeholder="https://www.linkedin.com/in/your-profile"
+                  className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500"
+                />
+              </div>
+
+              {/* portfolio */}
+              <div>
+                <label className="mb-2 block font-semibold text-gray-700">
+                  Portfolio
+                </label>
+
+                <input
+                  type="text"
+                  name="portfolio"
+                  placeholder="https://your-portfolio.com"
+                  className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500"
+                />
+              </div>
+
+              {/* any other social media */}
+              <div>
+                <label className="mb-2 block font-semibold text-gray-700">
+                  Any Other Social Media
+                </label>
+
+                <input
+                  type="text"
+                  name="socialMedia"
+                  placeholder="https://facebook.com/your-profile"
+                  className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500"
+                />
+              </div>
+
+            </div>
+          </div>
 
             {/* Profile Photo */}
             <div>
-              <label className="mb-2 block font-semibold text-gray-700">
+              <label className="mb-2 block bg-gray-100 px-4 py-1 rounded-xl font-semibold text-gray-700">
                 Profile Photo
               </label>
 
@@ -428,7 +441,7 @@ const handleSave = async (e) => {
 
             {/* Banner Photo */}
             <div>
-              <label className="mb-2 block font-semibold text-gray-700">
+              <label className="mb-2 block bg-gray-100 px-4 py-1 rounded-xl font-semibold text-gray-700">
                 Banner Photo
               </label>
 
