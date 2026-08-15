@@ -1,12 +1,29 @@
-import { useState } from "react";
+import { use, useState } from "react";
+import { AuthContext } from "../AuthProvider/AuthProvider";
 
 const ProfileModal = ({ isOpen, onClose }) => {
+  const {user}=use(AuthContext);
+  
   const [photo, setPhoto] = useState(null);
   const [bannerPhoto, setBannerPhoto] = useState(null);
+const [skills, setSkills] = useState("");
+const [skillsError, setSkillsError] = useState("")
+  // console.log("ProfileModal User:", user.providerData);
 
   if (!isOpen) return null;
+const handleSkillsChange = (e) => {
+  const value = e.target.value;
+  setSkills(value);
 
-  // const handleSave = async (e) => {
+  if (value.trim() && !value.includes(",")) {
+    setSkillsError("Please separate your skills with commas.");
+  } else {
+    setSkillsError("");
+  }
+};
+
+
+// const handleSave = async (e) => {
   //   e.preventDefault();
   //   const form = e.target;
   //   const data = {
@@ -56,8 +73,33 @@ const ProfileModal = ({ isOpen, onClose }) => {
   // };
 const handleSave = async (e) => {
   e.preventDefault();
+
+  if (!skills.trim()) {
+    setSkillsError("Please enter at least one skill.");
+    return;
+  }
+
+  if (!skills.includes(",")) {
+    setSkillsError("Please separate your skills with commas.");
+    return;
+  }
+
+  setSkillsError("");
+
   const form = e.target;
   const data = new FormData();
+  data.append(
+    "name",
+    user?.displayName || user.providerData[0]?.displayName
+  );
+  data.append(
+    "email",
+    user?.email || user.providerData[0]?.email
+  );
+  data.append(
+    "uid",
+    user.uid
+  );
   data.append(
     "position",
     form.position.value
@@ -113,16 +155,16 @@ const handleSave = async (e) => {
   }
   try {
     const response = await fetch(
-      `http://localhost:3000/users/${userData._id}`,
+      `http://localhost:3000/users`,
       {
-        method: "PUT",
+        method: "POST",
         body: data,
       }
     );
     const result = await response.json();
     console.log(result);
     if (result.success) {
-      alert("Profile updated successfully!");
+      alert("Profile saved successfully!");
       onClose();
     }
   }
@@ -156,7 +198,32 @@ const handleSave = async (e) => {
         <form onSubmit={handleSave}>
 
           <div className="space-y-6 p-6">
+            <div>
+              <label className="mb-2 block font-semibold text-gray-700">
+                Name
+              </label>
 
+              <input
+                type="text"
+                name="name"
+                value={user?.displayName || user.providerData[0]?.displayName}
+                readOnly
+                className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500"
+              />
+            </div>
+            <div>
+              <label className="mb-2 block font-semibold text-gray-700">
+                Email
+              </label>
+
+              <input
+                type="text"
+                name="email"
+                value={user?.email || user.providerData[0]?.email}
+                readOnly
+                className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500"
+              />
+            </div>
             {/* Position */}
             <div>
               <label className="mb-2 block font-semibold text-gray-700">
@@ -216,21 +283,31 @@ const handleSave = async (e) => {
 
             {/* Skills */}
             <div>
-              <label className="mb-2 block font-semibold text-gray-700">
-                Skills
-              </label>
+  <label className="mb-2 block font-semibold text-gray-700">
+    Skills
+  </label>
 
-              <input
-                type="text"
-                name="skills"
-                placeholder="React, JavaScript, Node.js, MongoDB"
-                className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500"
-              />
+  <input
+    type="text"
+    name="skills"
+    value={skills}
+    onChange={handleSkillsChange}
+    placeholder="React, JavaScript, Node.js, MongoDB"
+    className={`w-full rounded-lg border px-4 py-3 outline-none focus:border-blue-500 ${
+      skillsError ? "border-red-500" : "border-gray-300"
+    }`}
+  />
 
-              <p className="mt-1 text-sm text-gray-500">
-                Separate skills with commas.
-              </p>
-            </div>
+  {skillsError ? (
+    <p className="mt-1 text-sm text-red-500">
+      {skillsError}
+    </p>
+  ) : (
+    <p className="mt-1 text-sm text-gray-500">
+      Separate skills with commas.
+    </p>
+  )}
+</div>
 
             {/* Education */}
             <div>
