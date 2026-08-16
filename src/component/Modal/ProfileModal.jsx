@@ -1,149 +1,248 @@
-import { use, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { AuthContext } from "../AuthProvider/AuthProvider";
 
+const normalizeProfileData = (data = {}) => {
+  const skillsValue = Array.isArray(data.skills)
+    ? data.skills.join(", ")
+    : typeof data.skills === "string"
+      ? data.skills
+      : "";
+
+  return {
+    position: data.position || "",
+    location: data.location || "",
+    phone: data.phone || "",
+    about: data.about || "",
+    skills: skillsValue,
+    education: {
+      university: data.university || data.education?.university || "",
+      degree: data.degree || data.education?.degree || "",
+    },
+    experience: {
+      position: data.experiencePosition || data.experience?.position || "",
+      companyName: data.companyName || data.experience?.companyName || "",
+      year: data.experienceYear || data.experience?.year || "",
+    },
+    socialLinks: {
+      linkedin: data.linkedin || data.socialLinks?.linkedin || "",
+      portfolio: data.portfolio || data.socialLinks?.portfolio || "",
+      socialMedia: data.socialMedia || data.socialLinks?.socialMedia || "",
+    },
+  };
+};
+
 const ProfileModal = ({ isOpen, onClose }) => {
-  const {user}=use(AuthContext);
-  
+  const { user } = use(AuthContext);
   const [photo, setPhoto] = useState(null);
   const [bannerPhoto, setBannerPhoto] = useState(null);
-const [skills, setSkills] = useState("");
-const [skillsError, setSkillsError] = useState("")
+  const [skills, setSkills] = useState("");
+  const [skillsError, setSkillsError] = useState("");
+  // const [isModalOpen, setIsModalOpen] = useState(false);
+  const [profileData, setProfileData] = useState({
+    position: "",
+    location: "",
+    phone: "",
+    about: "",
+    skills: "",
+    education: {
+      university: "",
+      degree: "",
+    },
+    experience: {
+      position: "",
+      companyName: "",
+      year: "",
+    },
+    socialLinks: {
+      linkedin: "",
+      portfolio: "",
+      socialMedia: "",
+    },
+  });
+
+  useEffect(() => {
+    if (!user?.uid) return;
+    fetch(`http://localhost:3000/users/${user.uid}`)
+      .then((res) => res.json())
+      .then((data) => {
+        const userData = data?.users || data || {};
+        const normalized = normalizeProfileData(userData);
+        setProfileData(normalized);
+        setSkills(normalized.skills || "");
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  }, [user?.uid]);
+
   if (!isOpen) return null;
-const handleSkillsChange = (e) => {
-  const value = e.target.value;
-  setSkills(value);
+  const handleSkillsChange = (e) => {
+    const value = e.target.value;
+    setSkills(value);
+    setProfileData((prevData) => ({
+      ...prevData,
+      skills: value,
+    }));
 
-  if (value.trim() && !value.includes(",")) {
-    setSkillsError("Please separate your skills with commas.");
-  } else {
+    if (value.trim() && !value.includes(",")) {
+      setSkillsError("Please separate your skills with commas.");
+    } else {
+      setSkillsError("");
+    }
+  };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    if (!skills.trim()) {
+      setSkillsError("Please enter at least one skill.");
+      return;
+    }
+    if (!skills.includes(",")) {
+      setSkillsError("Please separate your skills with commas.");
+      return;
+    }
     setSkillsError("");
-  }
-};
-
-const handleSave = async (e) => {
-  e.preventDefault();
-
-  if (!skills.trim()) {
-    setSkillsError("Please enter at least one skill.");
-    return;
-  }
-
-  if (!skills.includes(",")) {
-    setSkillsError("Please separate your skills with commas.");
-    return;
-  }
-
-  setSkillsError("");
-
-  const form = e.target;
-  const data = new FormData();
-  data.append(
-    "name",
-    user?.displayName || user.providerData[0]?.displayName
-  );
-  data.append(
-    "email",
-    user?.email || user.providerData[0]?.email
-  );
-  data.append(
-    "uid",
-    user.uid
-  );
-  data.append(
-    "position",
-    form.position.value
-  );
-  data.append(
-    "location",
-    form.location.value || ""
-  );
-  data.append(
-    "phone",
-    form.phone.value || ""
-  );
-  data.append(
-    "about",
-    form.about.value
-  );
-  const skill = form.skills.value
-    .split(",")
-    .map((skill) => skill.trim())
-    .filter((skill) => skill !== "");
-  data.append(
-    "skills",
-    JSON.stringify(skill)
-  );
-  data.append(
-    "university",
-    form.university.value || ""
-  );
-  data.append(
-    "degree",
-    form.degree.value
-  );
-  data.append(
-    "experiencePosition",
-    form.experiencePosition.value || ""
-  );
-  data.append(
-    "linkedin",
-    form.linkedin.value || ""
-  );
-  data.append(
-    "portfolio",
-    form.portfolio.value || ""
-  );
-  data.append(
-    "socialMedia",
-    form.socialMedia.value || ""
-  );
-  data.append(
-    "companyName",
-    form.companyName.value || ""
-  );
-  data.append(
-    "experienceYear",
-    form.experienceYear.value || ""
-  )
-  if (photo) {
-    data.append("photo", photo);
-  }
-  if (bannerPhoto) {
-    data.append(
-      "bannerPhoto",
-      bannerPhoto
-    );
-  }
-  try {
-    const response = await fetch(
-      `http://localhost:3000/users`,
-      {
+    const form = e.target;
+    const data = new FormData();
+    data.append("name", user?.displayName || user.providerData[0]?.displayName);
+    data.append("email", user?.email || user.providerData[0]?.email);
+    data.append("uid", user.uid);
+    data.append("position", form.position.value);
+    data.append("location", form.location.value || "");
+    data.append("phone", form.phone.value || "");
+    data.append("about", form.about.value);
+    const skill = form.skills.value
+      .split(",")
+      .map((skill) => skill.trim())
+      .filter((skill) => skill !== "");
+    data.append("skills", JSON.stringify(skill));
+    data.append("university", form.university.value || "");
+    data.append("degree", form.degree.value);
+    data.append("experiencePosition", form.experiencePosition.value || "");
+    data.append("linkedin", form.linkedin.value || "");
+    data.append("portfolio", form.portfolio.value || "");
+    data.append("socialMedia", form.socialMedia.value || "");
+    data.append("companyName", form.companyName.value || "");
+    data.append("experienceYear", form.experienceYear.value || "");
+    if (photo) {
+      data.append("photo", photo);
+    }
+    if (bannerPhoto) {
+      data.append("bannerPhoto", bannerPhoto);
+    }
+    try {
+      const response = await fetch(`http://localhost:3000/users`, {
         method: "POST",
         body: data,
+        uid: user.uid,
+      });
+      const result = await response.json();
+      console.log(result);
+      if (result.success) {
+        alert("Profile saved successfully!");
+        onClose();
       }
-    );
-    const result = await response.json();
-    console.log(result);
-    if (result.success) {
-      alert("Profile saved successfully!");
-      onClose();
+    } catch (error) {
+      console.error(error);
     }
-  }
-  catch (error) {
-    console.error(error);
-  }
-};
+  };
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setProfileData((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
+  };
+  const handleEducationChange = (e) => {
+    const { name, value } = e.target;
+
+    setProfileData((prev) => ({
+      ...prev,
+      education: {
+        ...prev.education,
+        [name]: value,
+      },
+    }));
+  };
+  const handleExperienceChange = (e) => {
+    const { name, value } = e.target;
+
+    setProfileData((prev) => ({
+      ...prev,
+      experience: {
+        ...prev.experience,
+        position:
+          name === "experiencePosition"
+            ? value
+            : prev.experience?.position || "",
+        companyName:
+          name === "companyName" ? value : prev.experience?.companyName || "",
+        year: name === "experienceYear" ? value : prev.experience?.year || "",
+      },
+    }));
+  };
+  const handleSocialChange = (e) => {
+    const { name, value } = e.target;
+
+    setProfileData((prev) => ({
+      ...prev,
+      socialLinks: {
+        ...prev.socialLinks,
+        [name]: value,
+      },
+    }));
+  };
+// const handleEditProfile = async (e) => {
+//   // setIsModalOpen(true);
+//   e.preventDefault();
+//   try {
+//     const formData = new FormData();
+//     formData.append("phone", phone);
+//     formData.append("about", about);
+
+//     formData.append("linkedin", linkedin);
+//     formData.append("portfolio", portfolio);
+//     formData.append("socialMedia", socialMedia);
+
+//     formData.append("skills", skills);
+
+//     formData.append("university", university);
+//     formData.append("degree", degree);
+
+//     formData.append("experiencePosition", experiencePosition);
+//     formData.append("companyName", companyName);
+//     formData.append("experienceYear", experienceYear);
+
+//     if (photo) {
+//       formData.append("photo", photo);
+//     }
+
+//     if (bannerPhoto) {
+//       formData.append("bannerPhoto", bannerPhoto);
+//     }
+
+//     const response = await fetch(
+//       `http://localhost:3000/users/${user.uid}`,
+//       {
+//         method: "PUT",
+//         body: formData,
+//       }
+//     );
+
+//     const data = await response.json();
+//     onClose(); // Close the modal after successful submission
+//     console.log(data);
+//   } catch (error) {
+//     console.error(error);
+//   }
+// };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 py-5">
-
       <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
-
         {/* Header */}
         <div className="sticky top-0 z-10 flex items-center justify-between border-b bg-blue-500 px-6 py-5">
-
-          <h2 className="text-2xl font-bold text-white">
-            Customize Info
-          </h2>
+          <h2 className="text-2xl font-bold text-white">Customize Info</h2>
 
           <button
             type="button"
@@ -152,12 +251,10 @@ const handleSave = async (e) => {
           >
             ×
           </button>
-
         </div>
 
         {/* FORM */}
         <form onSubmit={handleSave}>
-
           <div className="space-y-6 p-6">
             <div>
               <label className="mb-2 block bg-gray-100 px-4 py-1 rounded-xl font-semibold text-gray-700">
@@ -167,7 +264,9 @@ const handleSave = async (e) => {
               <input
                 type="text"
                 name="name"
-                value={user?.displayName || user.providerData[0]?.displayName}
+                value={
+                  user?.displayName || user.providerData[0]?.displayName || ""
+                }
                 readOnly
                 className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500"
               />
@@ -180,7 +279,7 @@ const handleSave = async (e) => {
               <input
                 type="text"
                 name="email"
-                value={user?.email || user.providerData[0]?.email}
+                value={user?.email || user.providerData[0]?.email || ""}
                 readOnly
                 className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500"
               />
@@ -193,8 +292,13 @@ const handleSave = async (e) => {
 
               <select
                 name="position"
+                value={profileData?.position || ""}
+                onChange={handleChange}
                 className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500"
               >
+                <option className="text-gray-500" value="Default">
+                  Select a position
+                </option>
                 <option value="Student">Student</option>
                 <option value="Alumni">Alumni</option>
               </select>
@@ -209,6 +313,8 @@ const handleSave = async (e) => {
               <input
                 type="text"
                 name="location"
+                onChange={handleChange}
+                value={profileData?.location || ""}
                 placeholder="Rajshahi, Bangladesh"
                 className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500"
               />
@@ -224,6 +330,8 @@ const handleSave = async (e) => {
                 type="text"
                 name="phone"
                 placeholder="+880 1234 567890"
+                value={profileData?.phone || ""}
+                onChange={handleChange}
                 className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500"
               />
             </div>
@@ -237,6 +345,8 @@ const handleSave = async (e) => {
               <textarea
                 name="about"
                 rows="4"
+                value={profileData?.about || ""}
+                onChange={handleChange}
                 placeholder="Write something about yourself..."
                 className="w-full resize-none rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500"
               />
@@ -244,41 +354,37 @@ const handleSave = async (e) => {
 
             {/* Skills */}
             <div>
-  <label className="mb-2 block bg-gray-100 px-4 py-1 rounded-xl font-semibold text-gray-700">
-    Skills
-  </label>
+              <label className="mb-2 block bg-gray-100 px-4 py-1 rounded-xl font-semibold text-gray-700">
+                Skills
+              </label>
 
-  <input
-    type="text"
-    name="skills"
-    value={skills}
-    onChange={handleSkillsChange}
-    placeholder="React, JavaScript, Node.js, MongoDB"
-    className={`w-full rounded-lg border px-4 py-3 outline-none focus:border-blue-500 ${
-      skillsError ? "border-red-500" : "border-gray-300"
-    }`}
-  />
+              <input
+                type="text"
+                name="skills"
+                value={profileData?.skills || skills || ""}
+                onChange={handleSkillsChange}
+                placeholder="React, JavaScript, Node.js, MongoDB"
+                className={`w-full rounded-lg border px-4 py-3 outline-none focus:border-blue-500 ${
+                  skillsError ? "border-red-500" : "border-gray-300"
+                }`}
+              />
 
-  {skillsError ? (
-    <p className="mt-1 text-sm text-red-500">
-      {skillsError}
-    </p>
-  ) : (
-    <p className="mt-1 text-sm text-gray-500">
-      Separate skills with commas.
-    </p>
-  )}
-</div>
+              {skillsError ? (
+                <p className="mt-1 text-sm text-red-500">{skillsError}</p>
+              ) : (
+                <p className="mt-1 text-sm text-gray-500">
+                  Separate skills with commas.
+                </p>
+              )}
+            </div>
 
             {/* Education */}
             <div>
-
               <h3 className="mb-4 bg-gray-100 px-4 py-1 rounded-xl text-lg font-bold text-gray-800">
                 Education
               </h3>
 
               <div className="grid gap-4 md:grid-cols-2">
-
                 {/* University */}
                 <div>
                   <label className="mb-2 block font-semibold text-gray-700">
@@ -288,6 +394,8 @@ const handleSave = async (e) => {
                   <input
                     type="text"
                     name="university"
+                    value={profileData?.education?.university || ""}
+                    onChange={handleEducationChange}
                     placeholder="University Name"
                     className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500"
                   />
@@ -301,6 +409,8 @@ const handleSave = async (e) => {
 
                   <select
                     name="degree"
+                    value={profileData?.education?.degree || ""}
+                    onChange={handleEducationChange}
                     className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500"
                   >
                     <option value="Bachelor">Bachelor</option>
@@ -308,19 +418,16 @@ const handleSave = async (e) => {
                     <option value="PhD">PhD</option>
                   </select>
                 </div>
-
               </div>
             </div>
 
             {/* Experience */}
             <div>
-
               <h3 className="mb-4 bg-gray-100 px-4 py-1 rounded-xl text-lg font-bold text-gray-800">
                 Role
               </h3>
 
               <div className="grid gap-4 md:grid-cols-3">
-
                 {/* Position */}
                 <div>
                   <label className="mb-2 block font-semibold text-gray-700">
@@ -330,6 +437,8 @@ const handleSave = async (e) => {
                   <input
                     type="text"
                     name="experiencePosition"
+                    onChange={handleExperienceChange}
+                    value={profileData?.experience?.position || ""}
                     placeholder="Software Engineer | N/A"
                     className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500"
                   />
@@ -344,6 +453,8 @@ const handleSave = async (e) => {
                   <input
                     type="text"
                     name="companyName"
+                    onChange={handleExperienceChange}
+                    value={profileData?.experience?.companyName || ""}
                     placeholder="Company Name | N/A"
                     className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500"
                   />
@@ -358,65 +469,70 @@ const handleSave = async (e) => {
                   <input
                     type="text"
                     name="experienceYear"
+                    onChange={handleExperienceChange}
+                    value={profileData?.experience?.year || ""}
                     placeholder="2024 - Present | N/A"
                     className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500"
                   />
                 </div>
-
               </div>
             </div>
-          {/* social media links */}
-          <div>
-            <h3 className="mb-4 text-lg bg-gray-100 px-4 py-1 rounded-xl font-bold text-gray-800">
-              Social Media
-            </h3>
+            {/* social media links */}
+            <div>
+              <h3 className="mb-4 text-lg bg-gray-100 px-4 py-1 rounded-xl font-bold text-gray-800">
+                Social Media
+              </h3>
 
-            <div className="grid gap-4 md:grid-cols-3">
+              <div className="grid gap-4 md:grid-cols-3">
+                {/* LinkedIn */}
+                <div>
+                  <label className="mb-2 block font-semibold text-gray-700">
+                    LinkedIn
+                  </label>
 
-              {/* LinkedIn */}
-              <div>
-                <label className="mb-2 block font-semibold text-gray-700">
-                  LinkedIn
-                </label>
+                  <input
+                    type="text"
+                    name="linkedin"
+                    onChange={handleSocialChange}
+                    value={profileData?.socialLinks?.linkedin || ""}
+                    placeholder="https://www.linkedin.com/in/your-profile"
+                    className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500"
+                  />
+                </div>
 
-                <input
-                  type="text"
-                  name="linkedin"
-                  placeholder="https://www.linkedin.com/in/your-profile"
-                  className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500"
-                />
+                {/* portfolio */}
+                <div>
+                  <label className="mb-2 block font-semibold text-gray-700">
+                    Portfolio
+                  </label>
+
+                  <input
+                    type="text"
+                    name="portfolio"
+                    onChange={handleSocialChange}
+                    value={profileData?.socialLinks?.portfolio || ""}
+                    placeholder="https://your-portfolio.com"
+                    className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                {/* any other social media */}
+                <div>
+                  <label className="mb-2 block font-semibold text-gray-700">
+                    Any Other Social Media
+                  </label>
+
+                  <input
+                    type="text"
+                    name="socialMedia"
+                    onChange={handleSocialChange}
+                    value={profileData?.socialLinks?.socialMedia || ""}
+                    placeholder="https://facebook.com/your-profile"
+                    className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500"
+                  />
+                </div>
               </div>
-
-              {/* portfolio */}
-              <div>
-                <label className="mb-2 block font-semibold text-gray-700">
-                  Portfolio
-                </label>
-
-                <input
-                  type="text"
-                  name="portfolio"
-                  placeholder="https://your-portfolio.com"
-                  className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500"
-                />
-              </div>
-
-              {/* any other social media */}
-              <div>
-                <label className="mb-2 block font-semibold text-gray-700">
-                  Any Other Social Media
-                </label>
-
-                <input
-                  type="text"
-                  name="socialMedia"
-                  placeholder="https://facebook.com/your-profile"
-                  className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500"
-                />
-              </div>
-
             </div>
-          </div>
 
             {/* Profile Photo */}
             <div>
@@ -459,19 +575,22 @@ const handleSave = async (e) => {
                 </p>
               )}
             </div>
-
           </div>
 
           {/* Footer */}
           <div className="sticky bottom-0 flex justify-end gap-3 border-t bg-white px-6 py-4">
-
+            {/* <> */}
             <button
               type="button"
-              onClick={onClose}
-              className="rounded-lg border border-gray-300 px-6 py-2.5 font-semibold text-gray-700 hover:bg-gray-100"
-            >
+              // onClick={handleEditProfile}
+              
+              className="rounded-lg border border-gray-300
+               px-6 py-2.5 font-semibold text-gray-700 hover:bg-gray-100">
               Edit
             </button>
+            {/* <ProfileModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+            </> */}
+            
 
             <button
               type="submit"
@@ -479,9 +598,7 @@ const handleSave = async (e) => {
             >
               Save
             </button>
-
           </div>
-
         </form>
       </div>
     </div>

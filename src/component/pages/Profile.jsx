@@ -15,8 +15,8 @@ const Profile = () => {
   const { user } = use(AuthContext);
 
   const [userData, setUserData] = useState(null);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-
+  const [isModalOpen, setIsModalOpen] = useState(false);
+const [profileData, setProfileData] = useState(null);
   useEffect(() => {
     if (!user?.uid) return;
 
@@ -49,6 +49,18 @@ const Profile = () => {
       </div>
     );
   }
+   useEffect(() => {
+    fetch(`http://localhost:3000/users/${user?.uid}`)
+      .then((res) => res.json())
+      .then((data) => {
+        console.log(data);
+        setProfileData(data.user);
+      })
+      .catch((error) => {
+        console.error(error);
+      });
+  }, [user?.uid]);
+
 const handleEditProfile = () => {
 
 setIsModalOpen(true);
