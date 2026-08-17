@@ -92,60 +92,90 @@ const ProfileModal = ({ isOpen, onClose }) => {
   };
 
   const handleSave = async (e) => {
-    e.preventDefault();
-    if (!skills.trim()) {
-      setSkillsError("Please enter at least one skill.");
-      return;
-    }
-    if (!skills.includes(",")) {
-      setSkillsError("Please separate your skills with commas.");
-      return;
-    }
-    setSkillsError("");
-    const form = e.target;
-    const data = new FormData();
-    data.append("name", user?.displayName || user.providerData[0]?.displayName);
-    data.append("email", user?.email || user.providerData[0]?.email);
-    data.append("uid", user.uid);
-    data.append("position", form.position.value);
-    data.append("location", form.location.value || "");
-    data.append("phone", form.phone.value || "");
-    data.append("about", form.about.value);
-    const skill = form.skills.value
-      .split(",")
-      .map((skill) => skill.trim())
-      .filter((skill) => skill !== "");
-    data.append("skills", JSON.stringify(skill));
-    data.append("university", form.university.value || "");
-    data.append("degree", form.degree.value);
-    data.append("experiencePosition", form.experiencePosition.value || "");
-    data.append("linkedin", form.linkedin.value || "");
-    data.append("portfolio", form.portfolio.value || "");
-    data.append("socialMedia", form.socialMedia.value || "");
-    data.append("companyName", form.companyName.value || "");
-    data.append("experienceYear", form.experienceYear.value || "");
-    if (photo) {
-      data.append("photo", photo);
-    }
-    if (bannerPhoto) {
-      data.append("bannerPhoto", bannerPhoto);
-    }
-    try {
-      const response = await fetch(`http://localhost:3000/users`, {
+  e.preventDefault();
+
+  if (!skills.trim()) {
+    setSkillsError("Please enter at least one skill.");
+    return;
+  }
+
+  if (!skills.includes(",")) {
+    setSkillsError("Please separate your skills with commas.");
+    return;
+  }
+
+  setSkillsError("");
+
+  const form = e.target;
+  const data = new FormData();
+
+  data.append("name", user?.displayName || user.providerData[0]?.displayName);
+  data.append("email", user?.email || user.providerData[0]?.email);
+  data.append("uid", user.uid);
+
+  data.append("position", form.position.value);
+  data.append("location", form.location.value || "");
+  data.append("phone", form.phone.value || "");
+  data.append("about", form.about.value || "");
+
+  data.append("skills", form.skills.value);
+
+  data.append("university", form.university.value || "");
+  data.append("degree", form.degree.value || "");
+
+  data.append(
+    "experiencePosition",
+    form.experiencePosition.value || ""
+  );
+
+  data.append(
+    "companyName",
+    form.companyName.value || ""
+  );
+
+  data.append(
+    "experienceYear",
+    form.experienceYear.value || ""
+  );
+
+  data.append("linkedin", form.linkedin.value || "");
+  data.append("portfolio", form.portfolio.value || "");
+  data.append("socialMedia", form.socialMedia.value || "");
+
+  if (photo) {
+    data.append("photo", photo);
+  }
+
+  if (bannerPhoto) {
+    data.append("bannerPhoto", bannerPhoto);
+  }
+
+  try {
+    const response = await fetch(
+      "http://localhost:3000/users",
+      {
         method: "POST",
         body: data,
-        uid: user.uid,
-      });
-      const result = await response.json();
-      console.log(result);
-      if (result.success) {
-        alert("Profile saved successfully!");
-        onClose();
       }
-    } catch (error) {
-      console.error(error);
+    );
+
+    const result = await response.json();
+
+   if (response.status === 409) {
+  alert(result.message);
+  return;
+}
+
+    if (result.success) {
+      alert("Profile saved successfully!");
+      onClose();
     }
-  };
+
+  } catch (error) {
+    console.error(error);
+  }
+};
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setProfileData((prevData) => ({
@@ -192,50 +222,93 @@ const ProfileModal = ({ isOpen, onClose }) => {
       },
     }));
   };
-// const handleEditProfile = async (e) => {
-//   // setIsModalOpen(true);
-//   e.preventDefault();
-//   try {
-//     const formData = new FormData();
-//     formData.append("phone", phone);
-//     formData.append("about", about);
 
-//     formData.append("linkedin", linkedin);
-//     formData.append("portfolio", portfolio);
-//     formData.append("socialMedia", socialMedia);
+const handleEditProfile = async (e) => {
+  e.preventDefault();
 
-//     formData.append("skills", skills);
+  try {
+    const formData = new FormData();
+    formData.append("position", profileData.position || "");
+    formData.append("location", profileData.location || "");
+    formData.append("phone", profileData.phone || "");
+    formData.append("about", profileData.about || "");
 
-//     formData.append("university", university);
-//     formData.append("degree", degree);
+    formData.append(
+      "linkedin",
+      profileData.socialLinks?.linkedin || ""
+    );
 
-//     formData.append("experiencePosition", experiencePosition);
-//     formData.append("companyName", companyName);
-//     formData.append("experienceYear", experienceYear);
+    formData.append(
+      "portfolio",
+      profileData.socialLinks?.portfolio || ""
+    );
 
-//     if (photo) {
-//       formData.append("photo", photo);
-//     }
+    formData.append(
+      "socialMedia",
+      profileData.socialLinks?.socialMedia || ""
+    );
 
-//     if (bannerPhoto) {
-//       formData.append("bannerPhoto", bannerPhoto);
-//     }
+    formData.append(
+      "skills",
+      profileData.skills || ""
+    );
 
-//     const response = await fetch(
-//       `http://localhost:3000/users/${user.uid}`,
-//       {
-//         method: "PUT",
-//         body: formData,
-//       }
-//     );
+    formData.append(
+      "university",
+      profileData.education?.university || ""
+    );
 
-//     const data = await response.json();
-//     onClose(); // Close the modal after successful submission
-//     console.log(data);
-//   } catch (error) {
-//     console.error(error);
-//   }
-// };
+    formData.append(
+      "degree",
+      profileData.education?.degree || ""
+    );
+
+    formData.append(
+      "experiencePosition",
+      profileData.experience?.position || ""
+    );
+
+    formData.append(
+      "companyName",
+      profileData.experience?.companyName || ""
+    );
+
+    formData.append(
+      "experienceYear",
+      profileData.experience?.year || ""
+    );
+
+    if (photo) {
+      formData.append("photo", photo);
+    }
+
+    if (bannerPhoto) {
+      formData.append("bannerPhoto", bannerPhoto);
+    }
+
+    const response = await fetch(
+      `http://localhost:3000/users/${user.uid}`,
+      {
+        method: "PUT",
+        body: formData,
+      }
+    );
+
+    const result = await response.json();
+
+    console.log("PUT result:", result);
+
+    if (result.success) {
+      alert("Profile updated successfully!");
+      onClose();
+    } else {
+      alert(result.message);
+    }
+
+  } catch (error) {
+    console.error("Edit error:", error);
+  }
+};
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 py-5">
@@ -582,14 +655,14 @@ const ProfileModal = ({ isOpen, onClose }) => {
             {/* <> */}
             <button
               type="button"
-              // onClick={handleEditProfile}
-              
+              onClick={handleEditProfile}
               className="rounded-lg border border-gray-300
                px-6 py-2.5 font-semibold text-gray-700 hover:bg-gray-100">
               Edit
             </button>
-            {/* <ProfileModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
-            </> */}
+            
+            {/* </>  */}
+            
             
 
             <button

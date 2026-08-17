@@ -17,6 +17,7 @@ const Profile = () => {
   const [userData, setUserData] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 const [profileData, setProfileData] = useState(null);
+
   useEffect(() => {
     if (!user?.uid) return;
 
@@ -34,14 +35,28 @@ const [profileData, setProfileData] = useState(null);
         console.log("Error getting user data:", error);
       }
     };
-
     getUserData();
   }, [user]);
 
   console.log("Firebase Auth User:", user);
-  console.log("Firestore User Data:", userData);
+  console.log("profileData User Data:", profileData);
 
-  // Loading
+useEffect(() => {
+    if (!user?.uid) return;
+
+    fetch(`http://localhost:3000/users/${user.uid}`)
+      .then((res) => res.json())
+      .then((data) => {
+        const userProfile = data?.users || data?.user || data || {};
+        console.log("profile API response:", userProfile);
+        setProfileData(userProfile);
+      })
+      .catch((error) => {
+        console.error(error);
+      });
+  }, [user?.uid]);
+
+    // Loading
   if (!userData) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -49,17 +64,6 @@ const [profileData, setProfileData] = useState(null);
       </div>
     );
   }
-   useEffect(() => {
-    fetch(`http://localhost:3000/users/${user?.uid}`)
-      .then((res) => res.json())
-      .then((data) => {
-        console.log(data);
-        setProfileData(data.user);
-      })
-      .catch((error) => {
-        console.error(error);
-      });
-  }, [user?.uid]);
 
 const handleEditProfile = () => {
 
@@ -68,14 +72,14 @@ setIsModalOpen(true);
 }
   return (
     <div className="min-h-screen bg-slate-50 px-4 py-5">
-      <div className="mx-auto max-w-3xl space-y-3">
+      <div className="mx-auto max-w-7xl space-y-3">
 
         {/* ================= PROFILE HEADER ================= */}
         <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
 
           {/* Cover */}
-          <div className="h-40 bg-gradient-to-r from-blue-600 to-cyan-600">
-            <img src="https://images.unsplash.com/photo-1503264116251-35a269479413?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80" alt="Cover" className="h-full w-full object-cover" />
+          <div className="h-45 overflow-hidden ">
+            <img src={profileData?.bannerPhoto} alt="Cover" className="h-full w-full object-cover object-bottom" />
           </div>
 
           <div className="px-4 pb-3">
@@ -83,15 +87,13 @@ setIsModalOpen(true);
             {/* Avatar */}
             <div className="-mt-8 flex items-end justify-between">
 
-              <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-white bg-blue-600 text-lg font-medium text-white shadow-sm">
-                {user?.displayName
-                  ?.slice(0, 2)
-                  .toUpperCase()}
+              <div className="flex h-22 w-22 items-center justify-center rounded-full border-2 border-white bg-blue-600 text-lg font-medium text-white shadow-sm">
+                {profileData?.photo || user?.displayName?.slice(0, 2).toUpperCase()}
               </div>
 
               {/* Edit */}
-              <button onClick={() => {handleEditProfile()}} className="btn btn-xs rounded-lg border border-slate-200 bg-white font-normal">
-                <CiEdit size={16} />
+              <button onClick={() => {handleEditProfile()}} className="btn btn-lg rounded-lg border border-slate-200 bg-white font-normal">
+                <CiEdit size={22} />
                 Edit profile
               </button>
                    <ProfileModal
@@ -104,21 +106,21 @@ setIsModalOpen(true);
             {/* Name */}
             <div className="mt-2">
 
-              <h1 className="text-lg font-bold text-slate-950">
+              <h1 className="text-xl font-bold text-slate-950">
                 {userData?.name}
               </h1>
 
-              <p className="text-xs text-slate-500">
+              <p className="text-sm text-slate-500">
                 Department of {userData?.department} 
               </p>
 
             </div>
 
             {/* Basic information */}
-            <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] text-slate-500">
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-[14px] text-slate-500">
 
               <span className="rounded-full bg-slate-100 px-2 py-1">
-                Student
+                {profileData?.position}
               </span>
 
               <span>
@@ -135,13 +137,13 @@ setIsModalOpen(true);
 
               <span className="flex items-center gap-0.5">
                 <CiLocationOn size={13} />
-                Dhaka, Bangladesh
+                {profileData?.location}
               </span>
 
             </div>
 
             {/* Student ID */}
-            <p className="mt-2 text-[11px] text-slate-500">
+            <p className="mt-2 text-[14px] font-semibold text-slate-500">
               Student ID: {userData?.studentId}
             </p>
 
@@ -151,14 +153,12 @@ setIsModalOpen(true);
         {/* ================= ABOUT ================= */}
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
 
-          <h2 className="text-sm font-semibold text-slate-950">
+          <h2 className="text-md font-semibold text-slate-950">
             About
           </h2>
 
-          <p className="mt-2 text-xs leading-5 text-slate-500">
-            Final year {userData?.department} student passionate about
-            building web products. Looking for a frontend or full-stack
-            internship where I can grow fast.
+          <p className="mt-2 text-md leading-5 text-slate-500">
+            {profileData?.about || "No about information provided."}
           </p>
 
         </section>
@@ -166,39 +166,42 @@ setIsModalOpen(true);
         {/* ================= SKILLS ================= */}
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
 
-          <h2 className="text-sm font-semibold text-slate-950">
+          <h2 className="text-md font-semibold text-slate-950">
             Skills
           </h2>
 
           <div className="mt-2 flex flex-wrap gap-1.5">
 
-            {["HTML", "CSS", "JavaScript", "React", "MongoDB", "Node.js", "Git"].map(
-              (skill) => (
+            {profileData?.skills?.length > 0 ? (
+              profileData.skills.map((skill) => (
                 <span
                   key={skill}
-                  className="rounded-full border border-slate-200 px-2 py-0.5 text-[10px] text-slate-700"
+                  className="rounded-full border border-slate-200 px-2 py-0.5 text-[13px] text-slate-700"
                 >
                   {skill}
                 </span>
-              )
+              ))
+            ) : (
+              <p className="text-xs text-slate-500">
+                No skills added yet.
+              </p>
             )}
-
           </div>
         </section>
 
         {/* ================= EDUCATION ================= */}
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
 
-          <h2 className="text-sm font-semibold text-slate-950">
+          <h2 className="text-md font-semibold text-slate-950">
             Education
           </h2>
 
-          <p className="mt-2 text-xs font-medium text-slate-900">
+          <p className="mt-2 text-md font-medium text-slate-900">
             {userData?.department}
           </p>
 
-          <p className="text-[11px] text-slate-500">
-            Varendra University · Batch {userData?.batch}
+          <p className="text-[14px] text-slate-500">
+            {profileData?.education?.university || "No education information provided."} · Batch {userData?.batch}
           </p>
 
         </section>
@@ -206,7 +209,7 @@ setIsModalOpen(true);
         {/* ================= EXPERIENCE ================= */}
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
 
-          <h2 className="text-sm font-semibold text-slate-950">
+          <h2 className="text-md font-semibold text-slate-950">
             Experience
           </h2>
 
@@ -217,18 +220,87 @@ setIsModalOpen(true);
             </div>
 
             <div>
-              <p className="text-xs font-medium text-slate-900">
-                Frontend Intern
+              <p className="text-md font-medium text-slate-900">
+                {profileData?.experience?.position || "No experience information provided."}
               </p>
 
-              <p className="text-[11px] text-slate-500">
-                Codebase Ltd. · Summer 2025
+              <p className="text-[14px] text-slate-500">
+                {profileData?.experience?.companyName || "No company information provided."} · {profileData?.experience?.year || "No duration information provided."}
               </p>
             </div>
 
           </div>
 
         </section>
+        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+
+          <h2 className="text-md font-semibold text-slate-950">
+            Contact Information
+          </h2>
+
+          <p className="mt-2 text-md font-medium text-slate-900">
+            {profileData?.phone || "No phone information provided."}
+          </p>
+
+          <p className="text-[14px] text-slate-500">
+            {profileData?.email || "No email information provided."}
+          </p>
+
+        </section>
+        
+           <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+  <h2 className="text-md font-semibold text-slate-950">
+    Social Links
+  </h2>
+
+  <p className="mt-2 text-sm font-medium text-slate-900">
+    LinkedIn:{" "}
+    {profileData?.socialLinks?.linkedin ? (
+      <a
+        href={profileData.socialLinks.linkedin}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-blue-600 hover:underline"
+      >
+        Visit LinkedIn
+      </a>
+    ) : (
+      "No LinkedIn information provided."
+    )}
+  </p>
+
+  <p className="text-[14px] text-slate-500">
+    Portfolio:{" "}
+    {profileData?.socialLinks?.portfolio ? (
+      <a
+        href={profileData.socialLinks.portfolio}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-blue-600 hover:underline"
+      >
+        Visit Portfolio
+      </a>
+    ) : (
+      "No portfolio information provided."
+    )}
+  </p>
+
+  <p className="text-[14px] text-slate-500">
+    Other Links:{" "}
+    {profileData?.socialLinks?.socialMedia ? (
+      <a
+        href={profileData.socialLinks.socialMedia}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-blue-600 hover:underline"
+      >
+        Visit Link
+      </a>
+    ) : (
+      "No other social links provided."
+    )}
+  </p>
+</section>
 
       </div>
     </div>
