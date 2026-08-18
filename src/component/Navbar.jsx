@@ -43,7 +43,7 @@ const handleSignOut = () => {
           </li>
           <li>
   <NavLink
-    to="/profile"
+    to={`/profile/${user.uid}`}
     className="flex flex-col items-center"
   >
     {user?.photoURL ? (

@@ -36,7 +36,7 @@ export const router = createBrowserRouter([
         Component: Connection
       },
       {
-        path: "/messages",
+        path: "/messages/:uid",
         Component: Messages
       },
       {
@@ -44,7 +44,7 @@ export const router = createBrowserRouter([
         Component: Alerts
       },
       {
-        path: "/profile",
+        path: "/profile/:uid",
         Component: Profile
       },
       {

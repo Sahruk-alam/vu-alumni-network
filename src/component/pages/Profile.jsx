@@ -1,7 +1,4 @@
-import {
-  CiLocationOn,
-  CiEdit,
-} from "react-icons/ci";
+import { CiLocationOn,CiEdit,} from "react-icons/ci";
 import { PiBriefcase } from "react-icons/pi";
 import { use } from "react";
 import { useEffect, useState } from "react";
@@ -10,13 +7,17 @@ import { doc, getDoc } from "firebase/firestore";
 import ProfileModal from "../Modal/ProfileModal";
 import { AuthContext } from "../AuthProvider/AuthProvider";
 import { auth, db } from "../firebase/firebase";
+import { useParams } from "react-router";
 
 const Profile = () => {
   const { user } = use(AuthContext);
+  const { uid } = useParams();
+const isOwnProfile = user?.uid === uid;
 
   const [userData, setUserData] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 const [profileData, setProfileData] = useState(null);
+
 
   useEffect(() => {
     if (!user?.uid) return;
@@ -44,7 +45,7 @@ const [profileData, setProfileData] = useState(null);
 useEffect(() => {
     if (!user?.uid) return;
 
-    fetch(`http://localhost:3000/users/${user.uid}`)
+    fetch(`http://localhost:3000/users/${uid}`)
       .then((res) => res.json())
       .then((data) => {
         const userProfile = data?.users || data?.user || data || {};
@@ -54,7 +55,7 @@ useEffect(() => {
       .catch((error) => {
         console.error(error);
       });
-  }, [user?.uid]);
+  }, [uid]);
 
     // Loading
   if (!userData) {
@@ -94,15 +95,23 @@ console.log("batch",userData?.batch);
               </div>
 
               {/* Edit */}
-              <button onClick={() => {handleEditProfile()}} className="btn btn-lg rounded-lg border border-slate-200 bg-white font-normal">
-                <CiEdit size={22} />
-                Edit profile
-              </button>
-                   <ProfileModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        // userData={userData}
-      />
+           {isOwnProfile && (
+  <>
+    {/* Edit */}
+    <button
+      onClick={handleEditProfile}
+      className="btn btn-lg rounded-lg border border-slate-200 bg-white font-normal"
+    >
+      <CiEdit size={22} />
+      Edit profile
+    </button>
+
+    <ProfileModal
+      isOpen={isModalOpen}
+      onClose={() => setIsModalOpen(false)}
+    />
+     </>
+    )}
             </div>
 
             {/* Name */}

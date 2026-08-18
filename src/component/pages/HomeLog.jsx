@@ -7,6 +7,7 @@ import {
   PiBriefcase,
 } from "react-icons/pi";
 import { AuthContext } from "../AuthProvider/AuthProvider";
+import { Link, Navigate, useNavigate } from "react-router";
 
 const HomeLog = () => {
   const { user } = use(AuthContext);
@@ -19,6 +20,12 @@ const HomeLog = () => {
   const [loadingPosts, setLoadingPosts] = useState(true);
   const [posting, setPosting] = useState(false);
 
+  const [allUsers, setAllUsers] = useState([]);
+  const navigate = useNavigate();
+
+// console.log("allUsers", allUsers);
+
+
   const categories = [
     "Career Advice",
     "Internship",
@@ -28,30 +35,9 @@ const HomeLog = () => {
     "Event",
   ];
 
-  // =====================================================
-  // PEOPLE
-  // =====================================================
-
-  const people = [
-    {
-      name: "Farhana Akter",
-      initials: "FA",
-      role: "3rd year student · Cyber security enthusiast",
-    },
-    {
-      name: "Rakib Chowdhury",
-      initials: "RC",
-      role: "Product Manager at Pathao",
-    },
-    {
-      name: "Ayesha Siddika",
-      initials: "AS",
-      role: "Cloud Security Engineer at Samsung R&D",
-    },
-  ];
-console.log("batch",profileData);
+// console.log("batch",profileData);
 const jobs = [
-    {
+      {
       title: "Frontend Developer Intern",
       company: "Brain Station 23 · Dhaka (Hybrid)",
       skills: "4 matching skills",
@@ -119,9 +105,7 @@ const jobs = [
     loadPosts();
   }, []);
 
-  // =====================================================
   // CREATE POST
-  // =====================================================
 
   const handlePost = async () => {
     if (!postText.trim()) return;
@@ -180,10 +164,6 @@ const jobs = [
     }
   };
 
-  // =====================================================
-  // LIKE
-  // =====================================================
-
   const handleLike = (id) => {
     setPosts((previousPosts) =>
       previousPosts.map((post) =>
@@ -201,49 +181,30 @@ const jobs = [
     );
   };
 
-  // =====================================================
-  // FORMAT TIME
-  // =====================================================
-
   const getPostTime = (createdAt) => {
     if (!createdAt) return "now";
-
     const created = new Date(createdAt);
-
     if (Number.isNaN(created.getTime())) {
       return "now";
     }
-
     const now = new Date();
-
     const difference = Math.floor(
       (now.getTime() - created.getTime()) / 1000
     );
-
     if (difference < 60) {
       return "now";
     }
-
     const minutes = Math.floor(difference / 60);
-
     if (minutes < 60) {
       return `${minutes}m`;
     }
-
     const hours = Math.floor(minutes / 60);
-
     if (hours < 24) {
       return `${hours}h`;
     }
-
     const days = Math.floor(hours / 24);
-
     return `${days}d`;
   };
-
-  // =====================================================
-  // GET INITIALS
-  // =====================================================
 
   const getInitials = (name = "User") => {
     const words = name.trim().split(" ");
@@ -257,9 +218,18 @@ const jobs = [
     ).toUpperCase();
   };
 
-  // =====================================================
-  // RENDER
-  // =====================================================
+useEffect(() => {
+  fetch("http://localhost:3000/user")
+    .then(res => res.json())
+    .then(data => {
+      setAllUsers(data);
+    })
+    .catch(error => {
+      console.error(error);
+    });
+}, []);
+
+console.log("allUsers", allUsers);
 
   return (
     <div className="min-h-screen bg-slate-50 px-3 py-4 md:px-6">
@@ -280,7 +250,7 @@ const jobs = [
 
               {/* USER AVATAR */}
 
-              <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full">
+              <Link to={user?.uid ?`/profile/${user.uid}` : "/"} className="h-10 w-10 shrink-0 overflow-hidden rounded-full">
 
                 { profileData?.photo ||
                 user?.photoURL ? (
@@ -300,7 +270,7 @@ const jobs = [
                   </div>
                 )}
 
-              </div>
+              </Link>
 
               {/* TEXTAREA */}
 
@@ -389,7 +359,7 @@ const jobs = [
 
                       {/* POST USER IMAGE */}
 
-                      <div className="h-11 w-11 shrink-0 overflow-hidden rounded-full">
+                      <Link to={`/profile/${post.uid}`} className="h-11 w-11 shrink-0 overflow-hidden rounded-full">
 
                         {post.photo ? (
                           <img
@@ -403,7 +373,7 @@ const jobs = [
                           </div>
                         )}
 
-                      </div>
+                      </Link>
 
                       {/* USER INFO */}
 
@@ -411,9 +381,9 @@ const jobs = [
 
                         <div className="flex items-center gap-2">
 
-                          <h2 className="font-semibold text-slate-950">
+                          <Link to={`/profile/${post.uid}`} className="font-semibold hover:underline text-slate-950">
                             {postName}
-                          </h2>
+                          </Link>
 
                           <span className="rounded-full bg-blue-600 px-2 py-0.5 text-xs font-semibold text-white">
                             {post.position || ""}
@@ -541,32 +511,42 @@ const jobs = [
 
             <div className="mt-3 space-y-4">
 
-              {people.map((person) => (
+              {allUsers?.filter((person) => person.uid!==user?.uid)
+              .map ((person) => (
                 <div
                   key={person.name}
                   className="flex items-center gap-3"
                 >
 
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs text-blue-700">
-                    {person.initials}
+                  <div  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs text-blue-700">
+                    {person.name?.slice(0, 2).toUpperCase() || "NA"}
                   </div>
 
                   <div className="min-w-0 flex-1">
 
-                    <h3 className="truncate text-sm font-medium">
+                    <Link to={person.uid ? `/profile/${person.uid}` : "/"} className="truncate hover:underline text-sm font-medium">
                       {person.name}
-                    </h3>
+                    </Link>
 
                     <p className="truncate text-xs text-slate-500">
-                      {person.role}
+                      {person.about || "No about information provided."}
                     </p>
-
+                  <div className="flex gap-4 items-center justify-start">
                     <button
                       type="button"
                       className="mt-1 rounded-lg border border-slate-200 px-3 py-1 text-xs shadow-sm hover:bg-slate-50"
-                    >
-                      Connect
+                    > Connect
                     </button>
+
+                    <Link
+                    onClick={()=>Navigate(`/messages/${person.uid}`)}
+                
+                      type="button"
+                      className="mt-1 rounded-lg border border-slate-200 px-3 py-1 text-xs shadow-sm hover:bg-slate-50"
+                    > Message
+                    </Link>
+                  </div>
+                    
 
                   </div>
 
