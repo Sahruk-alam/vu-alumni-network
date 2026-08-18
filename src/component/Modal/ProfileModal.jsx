@@ -60,6 +60,7 @@ const ProfileModal = ({ isOpen, onClose }) => {
     },
   });
 
+  // console.log("profileData", user.department);
   useEffect(() => {
     if (!user?.uid) return;
     fetch(`http://localhost:3000/users/${user.uid}`)
@@ -119,6 +120,8 @@ const ProfileModal = ({ isOpen, onClose }) => {
   data.append("about", form.about.value || "");
 
   data.append("skills", form.skills.value);
+  // data.append("skills", form.skills.value.split(",").map((skill) => skill.trim()).join(","));
+  data.append("batch", form.batch.value || "");
 
   data.append("university", form.university.value || "");
   data.append("degree", form.degree.value || "");
@@ -376,7 +379,20 @@ const handleEditProfile = async (e) => {
                 <option value="Alumni">Alumni</option>
               </select>
             </div>
+                <div>
+              <label className="mb-2 block bg-gray-100 px-4 py-1 rounded-xl font-semibold text-gray-700">
+                Batch
+              </label>
 
+              <input
+                type="text"
+                name="batch"
+                onChange={handleChange}
+                value={profileData?.batch || ""}
+                placeholder="Rajshahi, Bangladesh"
+                className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500"
+              />
+            </div>
             {/* Location */}
             <div>
               <label className="mb-2 block bg-gray-100 px-4 py-1 rounded-xl font-semibold text-gray-700">

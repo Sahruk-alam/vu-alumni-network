@@ -38,8 +38,8 @@ const [profileData, setProfileData] = useState(null);
     getUserData();
   }, [user]);
 
-  console.log("Firebase Auth User:", user);
-  console.log("profileData User Data:", profileData);
+  // console.log("Firebase Auth User:", user);
+  // console.log("profileData User Data:", profileData);
 
 useEffect(() => {
     if (!user?.uid) return;
@@ -70,6 +70,7 @@ const handleEditProfile = () => {
 setIsModalOpen(true);
 
 }
+console.log("batch",userData?.batch);
   return (
     <div className="min-h-screen bg-slate-50 px-4 py-5">
       <div className="mx-auto max-w-7xl space-y-3">
@@ -78,7 +79,7 @@ setIsModalOpen(true);
         <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
 
           {/* Cover */}
-          <div className="h-45 overflow-hidden ">
+          <div className="h-45 bg-blue-300 overflow-hidden ">
             <img src={profileData?.bannerPhoto} alt="Cover" className="h-full w-full object-cover object-bottom" />
           </div>
 
@@ -87,8 +88,9 @@ setIsModalOpen(true);
             {/* Avatar */}
             <div className="-mt-8 flex items-end justify-between">
 
-              <div className="flex h-22 w-22 items-center justify-center rounded-full border-2 border-white bg-blue-600 text-lg font-medium text-white shadow-sm">
-                {profileData?.photo || user?.displayName?.slice(0, 2).toUpperCase()}
+              <div className="flex h-24 w-25 items-center justify-center rounded-full border-2 border-white bg-green-500 text-lg font-medium text-black shadow-sm">
+                <img className="rounded-full h-full w-full object-cover" src={profileData?.photo ||user?.displayName?.slice(0, 2).toUpperCase() } alt='No profile' />
+                
               </div>
 
               {/* Edit */}
@@ -106,8 +108,8 @@ setIsModalOpen(true);
             {/* Name */}
             <div className="mt-2">
 
-              <h1 className="text-xl font-bold text-slate-950">
-                {userData?.name}
+              <h1 className="text-xl mt-1 font-bold text-slate-950">
+                {profileData?.name ||userData?.name}
               </h1>
 
               <p className="text-sm text-slate-500">

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { use, useEffect, useState } from "react";
 import {
   PiSparkle,
   PiHeart,
@@ -6,42 +6,31 @@ import {
   PiShareNetwork,
   PiBriefcase,
 } from "react-icons/pi";
-import { FiSend } from "react-icons/fi";
+import { AuthContext } from "../AuthProvider/AuthProvider";
 
 const HomeLog = () => {
-  const [postText, setPostText] = useState("");
-  const [selectedType, setSelectedType] = useState("Career Advice");
+  const { user } = use(AuthContext);
 
-  const [posts, setPosts] = useState([
-    {
-      id: 1,
-      name: "Nusrat Jahan",
-      initials: "NJ",
-      role: "Computer Science & Engineering · Batch 2018",
-      time: "2h",
-      badge: "Alumni",
-      category: "Internship",
-      content:
-        "We are opening 4 frontend internship seats at Brain Station 23 next month. If you know React and can write clean CSS, start preparing your portfolio now. Drop me a message if you want feedback on yours.",
-      likes: 42,
-      comments: 1,
-      liked: false,
-    },
-    {
-      id: 2,
-      name: "Tanvir Hasan",
-      initials: "TH",
-      role: "Electrical & Electronic Engineering · Batch 2016",
-      time: "5h",
-      badge: "Alumni",
-      category: "Career Advice",
-      content:
-        "Career advice for students who want to move into data: build two end-to-end projects with real messy data instead of ten tutorials. Recruiters ask about decisions, not accuracy.",
-      likes: 88,
-      comments: 0,
-      liked: false,
-    },
-  ]);
+  const [postText, setPostText] = useState("");
+  const [selectedType, setSelectedType] = useState("");
+  const [profileData, setProfileData] = useState(null);
+  const [posts, setPosts] = useState([]);
+
+  const [loadingPosts, setLoadingPosts] = useState(true);
+  const [posting, setPosting] = useState(false);
+
+  const categories = [
+    "Career Advice",
+    "Internship",
+    "Job",
+    "Achievement",
+    "Project",
+    "Event",
+  ];
+
+  // =====================================================
+  // PEOPLE
+  // =====================================================
 
   const people = [
     {
@@ -60,8 +49,8 @@ const HomeLog = () => {
       role: "Cloud Security Engineer at Samsung R&D",
     },
   ];
-
-  const jobs = [
+console.log("batch",profileData);
+const jobs = [
     {
       title: "Frontend Developer Intern",
       company: "Brain Station 23 · Dhaka (Hybrid)",
@@ -79,200 +68,462 @@ const HomeLog = () => {
     },
   ];
 
-  const categories = [
-    "Career Advice",
-    "Internship",
-    "Job",
-    "Achievement",
-    "Project",
-    "Event",
-  ];
+  useEffect(() => {
+    if (!user?.uid) return;
 
-  // Create Post
-  const handlePost = () => {
-    if (!postText.trim()) return;
+    fetch(`http://localhost:3000/users/${user.uid}`)
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error("Failed to load profile");
+        }
 
-    const newPost = {
-      id: Date.now(),
-      name: "Shahruk Alam Sarder",
-      initials: "SA",
-      role: "Computer Science & Engineering · Final Year",
-      time: "now",
-      badge: "Student",
-      category: selectedType,
-      content: postText,
-      likes: 0,
-      comments: 0,
-      liked: false,
-    };
+        return res.json();
+      })
+      .then((data) => {
+        const userProfile = data?.users || data?.user || data || {};
 
-    setPosts([newPost, ...posts]);
-    setPostText("");
+        console.log("Profile API response:", userProfile);
+
+        setProfileData(userProfile);
+      })
+      .catch((error) => {
+        console.error("Profile error:", error);
+      });
+  }, [user?.uid]);
+
+  const loadPosts = async () => {
+    try {
+      setLoadingPosts(true);
+
+      const response = await fetch("http://localhost:3000/postJob");
+
+      if (!response.ok) {
+        throw new Error("Failed to load posts");
+      }
+
+      const data = await response.json();
+
+      console.log("Posts API response:", data);
+
+      const postList = data?.posts || [];
+
+      setPosts(postList);
+    } catch (error) {
+      console.error("Load posts error:", error);
+    } finally {
+      setLoadingPosts(false);
+    }
   };
 
-  // Like
+  useEffect(() => {
+    loadPosts();
+  }, []);
+
+  // =====================================================
+  // CREATE POST
+  // =====================================================
+
+  const handlePost = async () => {
+    if (!postText.trim()) return;
+
+    if (!selectedType) {
+      alert("Please select a category");
+      return;
+    }
+
+    if (!user?.uid) {
+      alert("Please login first");
+      return;
+    }
+
+    const postData = {
+      uid: user.uid,
+      name: profileData?.name || user?.displayName || "Anonymous User",
+      email: user?.email || "",
+      photo: profileData?.photo || user?.photoURL || "None",
+      role: profileData?.experience?.position || "",
+      position: profileData?.position || "",
+      category: selectedType,
+      batch:user?.batch || profileData?.batch || "",
+      content: postText.trim(),
+      likes: 0,
+      comments: 0,
+      createdAt: new Date().toISOString(),
+    };
+
+    try {
+      setPosting(true);
+
+      const response = await fetch("http://localhost:3000/postJob", {
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json",
+        },
+
+        body: JSON.stringify(postData),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create post");
+      }
+      const data = await response.json();
+      console.log("Create post response:", data);
+      setPostText("");
+      setSelectedType("");
+      await loadPosts();
+    } catch (error) {
+      console.error("Create post error:", error);
+      alert("Post create failed");
+    } finally {
+      setPosting(false);
+    }
+  };
+
+  // =====================================================
+  // LIKE
+  // =====================================================
+
   const handleLike = (id) => {
-    setPosts(
-      posts.map((post) =>
-        post.id === id
+    setPosts((previousPosts) =>
+      previousPosts.map((post) =>
+        post._id === id
           ? {
               ...post,
               liked: !post.liked,
+
               likes: post.liked
-                ? post.likes - 1
-                : post.likes + 1,
+                ? Math.max((post.likes || 0) - 1, 0)
+                : (post.likes || 0) + 1,
             }
           : post
       )
     );
   };
 
+  // =====================================================
+  // FORMAT TIME
+  // =====================================================
+
+  const getPostTime = (createdAt) => {
+    if (!createdAt) return "now";
+
+    const created = new Date(createdAt);
+
+    if (Number.isNaN(created.getTime())) {
+      return "now";
+    }
+
+    const now = new Date();
+
+    const difference = Math.floor(
+      (now.getTime() - created.getTime()) / 1000
+    );
+
+    if (difference < 60) {
+      return "now";
+    }
+
+    const minutes = Math.floor(difference / 60);
+
+    if (minutes < 60) {
+      return `${minutes}m`;
+    }
+
+    const hours = Math.floor(minutes / 60);
+
+    if (hours < 24) {
+      return `${hours}h`;
+    }
+
+    const days = Math.floor(hours / 24);
+
+    return `${days}d`;
+  };
+
+  // =====================================================
+  // GET INITIALS
+  // =====================================================
+
+  const getInitials = (name = "User") => {
+    const words = name.trim().split(" ");
+
+    if (words.length === 1) {
+      return words[0].slice(0, 2).toUpperCase();
+    }
+
+    return (
+      words[0].charAt(0) + words[words.length - 1].charAt(0)
+    ).toUpperCase();
+  };
+
+  // =====================================================
+  // RENDER
+  // =====================================================
+
   return (
     <div className="min-h-screen bg-slate-50 px-3 py-4 md:px-6">
 
       <div className="mx-auto grid max-w-7xl grid-cols-1 gap-5 lg:grid-cols-[1fr_300px]">
 
-        {/* ================================================= */}
-        {/*                    MAIN FEED                       */}
-        {/* ================================================= */}
+        {/* =================================================
+            MAIN
+        ================================================= */}
 
         <main>
 
           {/* ================= CREATE POST ================= */}
+
           <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
 
             <div className="flex gap-3">
 
-              {/* User Avatar */}
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-600 text-sm text-white">
-                SA
+              {/* USER AVATAR */}
+
+              <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full">
+
+                { profileData?.photo ||
+                user?.photoURL ? (
+                  <img
+                    src={  profileData?.photo ||
+                      user?.photoURL
+                    }
+                    alt="Profile"
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center bg-blue-600 text-sm text-white">
+                    {getInitials(
+                      profileData?.name ||
+                        user?.displayName
+                    )}
+                  </div>
+                )}
+
               </div>
 
+              {/* TEXTAREA */}
+
               <textarea
+                name="post"
                 value={postText}
                 onChange={(e) => setPostText(e.target.value)}
                 placeholder="Share an opportunity, advice or achievement..."
                 className="textarea textarea-bordered h-20 flex-1 resize-none rounded-xl"
               />
+
             </div>
 
-            {/* Categories */}
+            {/* CATEGORIES */}
+
             <div className="mt-3 flex flex-wrap gap-2">
 
               {categories.map((category) => (
                 <button
+                  type="button"
+                  name="category"
                   key={category}
                   onClick={() => setSelectedType(category)}
-                  className={`rounded-full border px-3 py-1 text-xs ${
+                  className={`rounded-full border px-3 py-1 text-xs transition ${
                     selectedType === category
                       ? "border-blue-600 bg-blue-50 text-blue-700"
-                      : "border-slate-200 bg-white text-slate-600"
+                      : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
                   }`}
                 >
                   {category}
                 </button>
               ))}
 
+              {/* POST BUTTON */}
+
               <button
+                type="button"
                 onClick={handlePost}
-                disabled={!postText.trim()}
-                className="ml-auto rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white disabled:bg-blue-200"
+                disabled={!postText.trim() || posting}
+                className="ml-auto rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-200"
               >
-                Post
+                {posting ? "Posting..." : "Post"}
               </button>
+
             </div>
+
           </div>
 
           {/* ================= POSTS ================= */}
+
           <div className="mt-4 space-y-4">
 
-            {posts.map((post) => (
-              <article
-                key={post.id}
-                className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
-              >
+            {loadingPosts ? (
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-500 shadow-sm">
+                Loading posts...
+              </div>
+            ) : posts.length === 0 ? (
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm">
 
-                {/* Post Header */}
-                <div className="flex items-center gap-3">
-
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-700">
-                    {post.initials}
-                  </div>
-
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h2 className="font-semibold text-slate-950">
-                        {post.name}
-                      </h2>
-
-                      <span className="rounded-full bg-blue-600 px-2 py-0.5 text-xs font-semibold text-white">
-                        {post.badge}
-                      </span>
-                    </div>
-
-                    <p className="text-xs text-slate-500">
-                      {post.role} · {post.time}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Category */}
-                <div className="mt-3">
-                  <span className="rounded-full border border-slate-200 px-3 py-1 text-xs text-slate-700">
-                    {post.category}
-                  </span>
-                </div>
-
-                {/* Content */}
-                <p className="mt-3 text-sm leading-6 text-slate-800">
-                  {post.content}
+                <p className="text-sm font-medium text-slate-700">
+                  No posts yet
                 </p>
 
-                {/* Divider */}
-                <div className="my-3 border-t border-slate-200"></div>
+                <p className="mt-1 text-xs text-slate-500">
+                  Be the first person to share something.
+                </p>
 
-                {/* Actions */}
-                <div className="flex items-center justify-between text-sm text-slate-500">
+              </div>
+            ) : (
+              posts.map((post) => {
 
-                  <button
-                    onClick={() => handleLike(post.id)}
-                    className={`flex items-center gap-2 ${
-                      post.liked ? "text-blue-600" : ""
-                    }`}
+                const postName =
+                  post.name ||
+                  post.displayName ||
+                  "Anonymous User";
+
+                return (
+                  <article
+                    key={post._id}
+                    className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
                   >
-                    <PiHeart
-                      size={20}
-                      fill={post.liked ? "currentColor" : "none"}
-                    />
-                    {post.likes}
-                  </button>
 
-                  <button className="flex items-center gap-2">
-                    <PiChatCircle size={20} />
-                    {post.comments}
-                  </button>
+                    {/* POST HEADER */}
 
-                  <button className="flex items-center gap-2">
-                    <PiShareNetwork size={20} />
-                    Share
-                  </button>
+                    <div className="flex items-center gap-3">
 
-                </div>
-              </article>
-            ))}
+                      {/* POST USER IMAGE */}
+
+                      <div className="h-11 w-11 shrink-0 overflow-hidden rounded-full">
+
+                        {post.photo ? (
+                          <img
+                            src={post.photo}
+                            alt={postName}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center bg-blue-100 text-sm font-medium text-blue-700">
+                            {getInitials(postName)}
+                          </div>
+                        )}
+
+                      </div>
+
+                      {/* USER INFO */}
+
+                      <div className="min-w-0">
+
+                        <div className="flex items-center gap-2">
+
+                          <h2 className="font-semibold text-slate-950">
+                            {postName}
+                          </h2>
+
+                          <span className="rounded-full bg-blue-600 px-2 py-0.5 text-xs font-semibold text-white">
+                            {post.position || ""}
+                          </span>
+
+                        </div>
+
+                        <p className="text-xs text-slate-500">
+                          {post.role || ""} ·{" "}
+                          {getPostTime(post.createdAt)}
+                        </p>
+
+                      </div>
+
+                    </div>
+
+                    {/* CATEGORY */}
+
+                    {post.category && (
+                      <div className="mt-3">
+
+                        <span className="rounded-full border border-slate-200 px-3 py-1 text-xs text-slate-700">
+                          {post.category}
+                        </span>
+
+                      </div>
+                    )}
+
+                    {/* CONTENT */}
+
+                    <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-800">
+                      {post.content}
+                    </p>
+
+                    {/* DIVIDER */}
+
+                    <div className="my-3 border-t border-slate-200" />
+
+                    {/* ACTIONS */}
+
+                    <div className="flex items-center justify-between text-sm text-slate-500">
+
+                      {/* LIKE */}
+
+                      <button
+                        type="button"
+                        onClick={() => handleLike(post._id)}
+                        className={`flex items-center gap-2 transition ${
+                          post.liked
+                            ? "text-blue-600"
+                            : "hover:text-blue-600"
+                        }`}
+                      >
+                        <PiHeart
+                          size={20}
+                          fill={
+                            post.liked
+                              ? "currentColor"
+                              : "none"
+                          }
+                        />
+
+                        {post.likes || 0}
+                      </button>
+
+                      {/* COMMENT */}
+
+                      <button
+                        type="button"
+                        className="flex items-center gap-2 hover:text-blue-600"
+                      >
+                        <PiChatCircle size={20} />
+
+                        {post.comments || 0}
+                      </button>
+
+                      {/* SHARE */}
+
+                      <button
+                        type="button"
+                        className="flex items-center gap-2 hover:text-blue-600"
+                      >
+                        <PiShareNetwork size={20} />
+
+                        Share
+                      </button>
+
+                    </div>
+
+                  </article>
+                );
+              })
+            )}
+
           </div>
+
         </main>
 
-        {/* ================================================= */}
-        {/*                     SIDEBAR                        */}
-        {/* ================================================= */}
+        {/* =================================================
+            SIDEBAR
+        ================================================= */}
 
         <aside className="space-y-4">
 
           {/* ================= PEOPLE ================= */}
+
           <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
 
             <div className="flex items-center gap-2">
+
               <PiSparkle
                 size={20}
                 className="text-blue-600"
@@ -281,6 +532,7 @@ const HomeLog = () => {
               <h2 className="font-semibold text-slate-950">
                 People you may know
               </h2>
+
             </div>
 
             <p className="mt-1 text-xs text-slate-500">
@@ -300,6 +552,7 @@ const HomeLog = () => {
                   </div>
 
                   <div className="min-w-0 flex-1">
+
                     <h3 className="truncate text-sm font-medium">
                       {person.name}
                     </h3>
@@ -308,20 +561,28 @@ const HomeLog = () => {
                       {person.role}
                     </p>
 
-                    <button className="mt-1 rounded-lg border border-slate-200 px-3 py-1 text-xs shadow-sm hover:bg-slate-50">
+                    <button
+                      type="button"
+                      className="mt-1 rounded-lg border border-slate-200 px-3 py-1 text-xs shadow-sm hover:bg-slate-50"
+                    >
                       Connect
                     </button>
+
                   </div>
 
                 </div>
               ))}
+
             </div>
+
           </section>
 
           {/* ================= JOBS ================= */}
+
           <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
 
             <div className="flex items-center gap-2">
+
               <PiBriefcase
                 size={20}
                 className="text-blue-600"
@@ -330,6 +591,7 @@ const HomeLog = () => {
               <h2 className="font-semibold text-slate-950">
                 Recommended for you
               </h2>
+
             </div>
 
             <p className="mt-1 text-xs text-slate-500">
@@ -343,6 +605,7 @@ const HomeLog = () => {
                   key={job.title}
                   className="rounded-2xl border border-slate-200 p-3"
                 >
+
                   <h3 className="text-sm font-medium text-slate-900">
                     {job.title}
                   </h3>
@@ -354,12 +617,16 @@ const HomeLog = () => {
                   <p className="mt-1 text-xs text-blue-600">
                     {job.skills}
                   </p>
+
                 </div>
               ))}
 
             </div>
 
-            <button className="mt-4 w-full text-center text-sm text-slate-900 hover:text-blue-600">
+            <button
+              type="button"
+              className="mt-4 w-full text-center text-sm text-slate-900 hover:text-blue-600"
+            >
               See all jobs
             </button>
 
@@ -368,6 +635,7 @@ const HomeLog = () => {
         </aside>
 
       </div>
+
     </div>
   );
 };
